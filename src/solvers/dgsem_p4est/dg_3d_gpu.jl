@@ -120,12 +120,16 @@ end
     i, j, k, element = @index(Global, NTuple)
 
     flux_local = @localmem eltype(du) (NVARIABLES, NNODES, NNODES, NNODES)
+    u_local = @localmem eltype(du) (NVARIABLES, NNODES, NNODES, NNODES)
     # Without auxiliary variables, `NAUX == 0` and nothing is stored.
     aux_local = @localmem eltype(du) (NAUX, NNODES, NNODES, NNODES)
 
     u_node = get_node_vars(u, equations, dg, i, j, k, element)
-    # Stage the auxiliary variables in shared memory such that the partner nodes
-    # of the sweeps below do not read them from global memory again
+    # Stage the solution and the auxiliary variables in shared memory such that the
+    # partner nodes of the sweeps below do not read them from global memory again
+    for v in 1:NVARIABLES
+        u_local[v, i, j, k] = u_node[v]
+    end
     set_aux_node_vars_local!(aux_local, aux, equations, dg, i, j, k, element)
     @synchronize
     aux_shared = get_aux_vars_local(aux_local, aux)
@@ -147,7 +151,7 @@ end
 
         # first coordinate direction: rotate the partner index along `i`
         ii = mod(i - 1 + offset, NNODES) + 1
-        u_node_ii = get_node_vars(u, equations, dg, ii, j, k, element)
+        u_node_ii = get_node_vars(u_local, equations, dg, ii, j, k)
         aux_node_ii = get_aux_node_vars(aux_shared, equations, dg, ii, j, k)
         # pull the contravariant vectors and compute the average
         Ja1_node_ii = get_contravariant_vector(1, contravariant_vectors,
@@ -176,7 +180,7 @@ end
 
         # second coordinate direction: rotate the partner index along `j`
         jj = mod(j - 1 + offset, NNODES) + 1
-        u_node_jj = get_node_vars(u, equations, dg, i, jj, k, element)
+        u_node_jj = get_node_vars(u_local, equations, dg, i, jj, k)
         aux_node_jj = get_aux_node_vars(aux_shared, equations, dg, i, jj, k)
         # pull the contravariant vectors and compute the average
         Ja2_node_jj = get_contravariant_vector(2, contravariant_vectors,
@@ -202,7 +206,7 @@ end
         weight = (even_nodes && offset == half_nnodes) ? 0.5f0 : 1.0f0
         # third coordinate direction: rotate the partner index along `k`
         kk = mod(k - 1 + offset, NNODES) + 1
-        u_node_kk = get_node_vars(u, equations, dg, i, j, kk, element)
+        u_node_kk = get_node_vars(u_local, equations, dg, i, j, kk)
         aux_node_kk = get_aux_node_vars(aux_shared, equations, dg, i, j, kk)
         # pull the contravariant vectors and compute the average
         Ja3_node_kk = get_contravariant_vector(3, contravariant_vectors,
@@ -250,12 +254,16 @@ end
     i, j, k, element = @index(Global, NTuple)
 
     flux_local = @localmem eltype(du) (NVARIABLES, NNODES, NNODES, NNODES)
+    u_local = @localmem eltype(du) (NVARIABLES, NNODES, NNODES, NNODES)
     # Without auxiliary variables, `NAUX == 0` and nothing is stored.
     aux_local = @localmem eltype(du) (NAUX, NNODES, NNODES, NNODES)
 
     u_node = get_node_vars(u, equations, dg, i, j, k, element)
-    # Stage the auxiliary variables in shared memory such that the partner nodes
-    # of the sweeps below do not read them from global memory again
+    # Stage the solution and the auxiliary variables in shared memory such that the
+    # partner nodes of the sweeps below do not read them from global memory again
+    for v in 1:NVARIABLES
+        u_local[v, i, j, k] = u_node[v]
+    end
     set_aux_node_vars_local!(aux_local, aux, equations, dg, i, j, k, element)
     @synchronize
     aux_shared = get_aux_vars_local(aux_local, aux)
@@ -277,7 +285,7 @@ end
 
         # first coordinate direction: rotate the partner index along `i`
         ii = mod(i - 1 + offset, NNODES) + 1
-        u_node_ii = get_node_vars(u, equations, dg, ii, j, k, element)
+        u_node_ii = get_node_vars(u_local, equations, dg, ii, j, k)
         aux_node_ii = get_aux_node_vars(aux_shared, equations, dg, ii, j, k)
         # pull the contravariant vectors and compute the average
         Ja1_node_ii = get_contravariant_vector(1, contravariant_vectors,
@@ -306,7 +314,7 @@ end
         weight = (even_nodes && offset == half_nnodes) ? 0.5f0 : 1.0f0
         # second coordinate direction: rotate the partner index along `j`
         jj = mod(j - 1 + offset, NNODES) + 1
-        u_node_jj = get_node_vars(u, equations, dg, i, jj, k, element)
+        u_node_jj = get_node_vars(u_local, equations, dg, i, jj, k)
         aux_node_jj = get_aux_node_vars(aux_shared, equations, dg, i, jj, k)
         # pull the contravariant vectors and compute the average
         Ja2_node_jj = get_contravariant_vector(2, contravariant_vectors,
@@ -334,7 +342,7 @@ end
         weight = (even_nodes && offset == half_nnodes) ? 0.5f0 : 1.0f0
         # third coordinate direction: rotate the partner index along `k`
         kk = mod(k - 1 + offset, NNODES) + 1
-        u_node_kk = get_node_vars(u, equations, dg, i, j, kk, element)
+        u_node_kk = get_node_vars(u_local, equations, dg, i, j, kk)
         aux_node_kk = get_aux_node_vars(aux_shared, equations, dg, i, j, kk)
         # pull the contravariant vectors and compute the average
         Ja3_node_kk = get_contravariant_vector(3, contravariant_vectors,
